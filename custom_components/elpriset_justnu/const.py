@@ -48,6 +48,13 @@ SENSOR_TOTAL_AVERAGE = "total_price_average_today"
 SENSOR_TOTAL_MIN = "total_price_min_today"
 SENSOR_TOTAL_MAX = "total_price_max_today"
 
+# Sensor names — total in SEK/kWh (for HA Energy dashboard cost tracking)
+SENSOR_TOTAL_CURRENT_SEK = "total_price_current_sek"
+SENSOR_TOTAL_NEXT_HOUR_SEK = "total_price_next_hour_sek"
+SENSOR_TOTAL_AVERAGE_SEK = "total_price_average_today_sek"
+SENSOR_TOTAL_MIN_SEK = "total_price_min_today_sek"
+SENSOR_TOTAL_MAX_SEK = "total_price_max_today_sek"
+
 # Units
 UNIT_SEK_PER_KWH = "SEK/kWh"
 UNIT_EUR_PER_KWH = "EUR/kWh"

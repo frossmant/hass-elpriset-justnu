@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -38,10 +38,15 @@ from .const import (
     SENSOR_PRICES_TOMORROW,
     SENSOR_TOMORROW_AVAILABLE,
     SENSOR_TOTAL_AVERAGE,
+    SENSOR_TOTAL_AVERAGE_SEK,
     SENSOR_TOTAL_CURRENT,
+    SENSOR_TOTAL_CURRENT_SEK,
     SENSOR_TOTAL_MAX,
+    SENSOR_TOTAL_MAX_SEK,
     SENSOR_TOTAL_MIN,
+    SENSOR_TOTAL_MIN_SEK,
     SENSOR_TOTAL_NEXT_HOUR,
+    SENSOR_TOTAL_NEXT_HOUR_SEK,
     UNIT_ORE_PER_KWH,
     UNIT_SEK_PER_KWH,
 )
@@ -124,8 +129,8 @@ _SPOT_SENSORS: tuple[ElprisetSensorEntityDescription, ...] = (
     ),
 )
 
-# ── Total price sensors (öre/kWh, only created when surcharges configured) ───
-_TOTAL_SENSORS: tuple[ElprisetSensorEntityDescription, ...] = (
+# ── Total price sensors — öre/kWh (human-readable, matches bill) ─────────────
+_TOTAL_SENSORS_ORE: tuple[ElprisetSensorEntityDescription, ...] = (
     ElprisetSensorEntityDescription(
         key=SENSOR_TOTAL_CURRENT,
         name="Current Total Price",
@@ -173,6 +178,78 @@ _TOTAL_SENSORS: tuple[ElprisetSensorEntityDescription, ...] = (
     ),
 )
 
+# ── Total price sensors — SEK/kWh (for HA Energy dashboard cost tracking) ────
+_TOTAL_SENSORS_SEK: tuple[ElprisetSensorEntityDescription, ...] = (
+    ElprisetSensorEntityDescription(
+        key=SENSOR_TOTAL_CURRENT_SEK,
+        name="Current Total Price (SEK/kWh)",
+        native_unit_of_measurement=UNIT_SEK_PER_KWH,
+        device_class=SensorDeviceClass.MONETARY,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:cash-clock",
+        requires_surcharges=True,
+    ),
+    ElprisetSensorEntityDescription(
+        key=SENSOR_TOTAL_NEXT_HOUR_SEK,
+        name="Next Hour Total Price (SEK/kWh)",
+        native_unit_of_measurement=UNIT_SEK_PER_KWH,
+        device_class=SensorDeviceClass.MONETARY,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:cash-fast",
+        requires_surcharges=True,
+    ),
+    ElprisetSensorEntityDescription(
+        key=SENSOR_TOTAL_AVERAGE_SEK,
+        name="Average Total Price Today (SEK/kWh)",
+        native_unit_of_measurement=UNIT_SEK_PER_KWH,
+        device_class=SensorDeviceClass.MONETARY,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:cash-multiple",
+        requires_surcharges=True,
+    ),
+    ElprisetSensorEntityDescription(
+        key=SENSOR_TOTAL_MIN_SEK,
+        name="Min Total Price Today (SEK/kWh)",
+        native_unit_of_measurement=UNIT_SEK_PER_KWH,
+        device_class=SensorDeviceClass.MONETARY,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:cash-minus",
+        requires_surcharges=True,
+    ),
+    ElprisetSensorEntityDescription(
+        key=SENSOR_TOTAL_MAX_SEK,
+        name="Max Total Price Today (SEK/kWh)",
+        native_unit_of_measurement=UNIT_SEK_PER_KWH,
+        device_class=SensorDeviceClass.MONETARY,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:cash-plus",
+        requires_surcharges=True,
+    ),
+)
+
+# Keys that map öre→SEK (divide by 100)
+_ORE_TO_SEK_MAP = {
+    SENSOR_TOTAL_CURRENT_SEK: SENSOR_TOTAL_CURRENT,
+    SENSOR_TOTAL_NEXT_HOUR_SEK: SENSOR_TOTAL_NEXT_HOUR,
+    SENSOR_TOTAL_AVERAGE_SEK: SENSOR_TOTAL_AVERAGE,
+    SENSOR_TOTAL_MIN_SEK: SENSOR_TOTAL_MIN,
+    SENSOR_TOTAL_MAX_SEK: SENSOR_TOTAL_MAX,
+}
+
+# Coordinator data keys for each sensor
+_DATA_KEY_MAP = {
+    SENSOR_CURRENT_PRICE:    ("current", "SEK_per_kWh", 5),
+    SENSOR_NEXT_HOUR_PRICE:  ("next_hour", "SEK_per_kWh", 5),
+    SENSOR_AVERAGE_PRICE:    ("average_today", None, 5),
+    SENSOR_MIN_PRICE:        ("min_today", None, 5),
+    SENSOR_MAX_PRICE:        ("max_today", None, 5),
+    SENSOR_TOTAL_CURRENT:    ("total_current", None, 2),
+    SENSOR_TOTAL_NEXT_HOUR:  ("total_next_hour", None, 2),
+    SENSOR_TOTAL_AVERAGE:    ("total_average_today", None, 2),
+    SENSOR_TOTAL_MIN:        ("total_min_today", None, 2),
+    SENSOR_TOTAL_MAX:        ("total_max_today", None, 2),
+}
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -183,15 +260,12 @@ async def async_setup_entry(
     coordinator: ElprisetJustNuCoordinator = hass.data[DOMAIN][entry.entry_id]
     has_surcharges = coordinator.data.get("has_surcharges", False)
 
-    entities = [
-        ElprisetSensor(coordinator, entry, desc)
-        for desc in _SPOT_SENSORS
+    entities: list[ElprisetSensor] = [
+        ElprisetSensor(coordinator, entry, desc) for desc in _SPOT_SENSORS
     ]
     if has_surcharges:
-        entities += [
-            ElprisetSensor(coordinator, entry, desc)
-            for desc in _TOTAL_SENSORS
-        ]
+        entities += [ElprisetSensor(coordinator, entry, desc) for desc in _TOTAL_SENSORS_ORE]
+        entities += [ElprisetSensor(coordinator, entry, desc) for desc in _TOTAL_SENSORS_SEK]
 
     async_add_entities(entities)
 
@@ -230,48 +304,35 @@ class ElprisetSensor(CoordinatorEntity[ElprisetJustNuCoordinator], SensorEntity)
             return None
         key = self.entity_description.key
 
-        # ── Spot sensors ──────────────────────────────────────────────────────
-        if key == SENSOR_CURRENT_PRICE:
-            e = data.get("current")
-            return round(e["SEK_per_kWh"], 5) if e else None
+        # SEK/kWh total sensors — divide öre value by 100
+        if key in _ORE_TO_SEK_MAP:
+            ore_key = _ORE_TO_SEK_MAP[key]
+            ore_data_key = _DATA_KEY_MAP.get(ore_key)
+            if ore_data_key:
+                data_key, field, _ = ore_data_key
+                raw = data.get(data_key) if field is None else (
+                    data.get(data_key, {}).get(field) if isinstance(data.get(data_key), dict)
+                    else None
+                )
+                return round(raw / 100.0, 5) if raw is not None else None
+            return None
 
-        if key == SENSOR_NEXT_HOUR_PRICE:
-            e = data.get("next_hour")
-            return round(e["SEK_per_kWh"], 5) if e else None
-
-        if key == SENSOR_AVERAGE_PRICE:
-            return data.get("average_today")
-
-        if key == SENSOR_MIN_PRICE:
-            return data.get("min_today")
-
-        if key == SENSOR_MAX_PRICE:
-            return data.get("max_today")
-
+        # Prices today / tomorrow (state = slot count)
         if key == SENSOR_PRICES_TODAY:
             return len(data.get("today", []))
-
         if key == SENSOR_PRICES_TOMORROW:
             return len(data.get("tomorrow", []))
-
         if key == SENSOR_TOMORROW_AVAILABLE:
             return "Yes" if data.get("tomorrow_available") else "No"
 
-        # ── Total price sensors (öre/kWh incl. surcharges + VAT) ─────────────
-        if key == SENSOR_TOTAL_CURRENT:
-            return data.get("total_current")
-
-        if key == SENSOR_TOTAL_NEXT_HOUR:
-            return data.get("total_next_hour")
-
-        if key == SENSOR_TOTAL_AVERAGE:
-            return data.get("total_average_today")
-
-        if key == SENSOR_TOTAL_MIN:
-            return data.get("total_min_today")
-
-        if key == SENSOR_TOTAL_MAX:
-            return data.get("total_max_today")
+        # Sensors with a simple data key mapping
+        if key in _DATA_KEY_MAP:
+            data_key, field_name, decimals = _DATA_KEY_MAP[key]
+            entry = data.get(data_key)
+            if entry is None:
+                return None
+            val = entry.get(field_name) if isinstance(entry, dict) else entry
+            return round(val, decimals) if val is not None else None
 
         return None
 
@@ -325,7 +386,7 @@ class ElprisetSensor(CoordinatorEntity[ElprisetJustNuCoordinator], SensorEntity)
                 for e in data.get("tomorrow", [])
             ]
 
-        elif key == SENSOR_TOTAL_CURRENT:
+        elif key in (SENSOR_TOTAL_CURRENT, SENSOR_TOTAL_CURRENT_SEK):
             surcharges = data.get("surcharges", {})
             e = data.get("current")
             attrs.update({
@@ -337,9 +398,14 @@ class ElprisetSensor(CoordinatorEntity[ElprisetJustNuCoordinator], SensorEntity)
                 "moms_percent": surcharges.get(CONF_VAT_PERCENT, 25.0),
                 "time_start": e.get("time_start") if e else None,
                 "time_end": e.get("time_end") if e else None,
+                "use_for_energy_dashboard": key == SENSOR_TOTAL_CURRENT_SEK,
             })
 
-        elif key in (SENSOR_TOTAL_AVERAGE, SENSOR_TOTAL_MIN, SENSOR_TOTAL_MAX):
+        elif key in (
+            SENSOR_TOTAL_AVERAGE, SENSOR_TOTAL_MIN, SENSOR_TOTAL_MAX,
+            SENSOR_TOTAL_AVERAGE_SEK, SENSOR_TOTAL_MIN_SEK, SENSOR_TOTAL_MAX_SEK,
+            SENSOR_TOTAL_NEXT_HOUR, SENSOR_TOTAL_NEXT_HOUR_SEK,
+        ):
             surcharges = data.get("surcharges", {})
             attrs.update({
                 "fast_påslag_spot_ore": surcharges.get(CONF_SURCHARGE_SPOT_MARKUP, 0.0),
