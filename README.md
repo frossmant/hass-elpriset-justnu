@@ -1,5 +1,7 @@
 # hass-elpriset-justnu
 
+[![Elpriset Just Nu](logo_color.png)](https://github.com/frossmant/hass-elpriset-justnu)
+
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 
 Home Assistant integration for Swedish electricity spot prices via [Elpriset just nu.se](https://www.elprisetjustnu.se).
