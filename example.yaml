@@ -1,0 +1,83 @@
+# ============================================================
+# Elpriset Just Nu — example Lovelace dashboard cards
+# Assumes you have configured SE3 (Stockholm) as a zone.
+# Replace "se3" with your zone slug in sensor entity IDs.
+# ============================================================
+
+# --- Simple glance card ---
+type: glance
+title: Electricity Prices – Stockholm (SE3)
+entities:
+  - entity: sensor.stockholm_se3_current_price
+    name: Now
+  - entity: sensor.stockholm_se3_next_hour_price
+    name: Next hour
+  - entity: sensor.stockholm_se3_average_price_today
+    name: Avg today
+  - entity: sensor.stockholm_se3_min_price_today
+    name: Min today
+  - entity: sensor.stockholm_se3_max_price_today
+    name: Max today
+
+---
+
+# --- Entities card with full detail ---
+type: entities
+title: Electricity Prices – Stockholm (SE3)
+entities:
+  - entity: sensor.stockholm_se3_current_price
+    name: Current price
+    icon: mdi:lightning-bolt
+  - entity: sensor.stockholm_se3_next_hour_price
+    name: Next hour price
+    icon: mdi:lightning-bolt-outline
+  - entity: sensor.stockholm_se3_average_price_today
+    name: Daily average
+  - entity: sensor.stockholm_se3_min_price_today
+    name: Daily minimum
+  - entity: sensor.stockholm_se3_max_price_today
+    name: Daily maximum
+  - entity: sensor.stockholm_se3_prices_today
+    name: Hourly slots today
+  - entity: sensor.stockholm_se3_prices_tomorrow
+    name: Hourly slots tomorrow
+  - entity: sensor.stockholm_se3_tomorrow_prices_available
+    name: Tomorrow available
+
+---
+
+# --- apexcharts-card for a price graph (requires apexcharts-card from HACS) ---
+# Install apexcharts-card from HACS first.
+type: custom:apexcharts-card
+header:
+  show: true
+  title: SE3 Today – SEK/kWh
+graph_span: 24h
+span:
+  start: day
+series:
+  - entity: sensor.stockholm_se3_current_price
+    data_generator: |
+      return entity.attributes.prices
+        ? entity.attributes.prices.map(p => [new Date(p.time_start).getTime(), p.SEK_per_kWh])
+        : [];
+    name: Price SEK/kWh
+    type: column
+    color: "#f59e0b"
+
+---
+
+# --- Automation example: notify when price drops below 0.50 SEK/kWh ---
+automation:
+  alias: "Electricity price very cheap"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.stockholm_se3_current_price
+      below: 0.50
+  action:
+    - service: notify.mobile_app_your_phone
+      data:
+        title: "⚡ Cheap electricity now!"
+        message: >
+          Current SE3 price is {{ states('sensor.stockholm_se3_current_price') }} SEK/kWh.
+          Great time to run dishwasher, washing machine, EV charging, etc.

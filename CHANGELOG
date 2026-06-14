@@ -1,0 +1,11 @@
+## [1.0.0] - 2026-06-14
+
+### Added
+- Initial release
+- Config flow with dropdown for SE1/SE2/SE3/SE4 price zones
+- Support for multiple zones (one config entry per zone)
+- Options flow for configurable update interval (15–240 minutes)
+- Sensors: current price, next hour, daily avg/min/max, today/tomorrow price lists
+- Full hourly (and quarterly from 2025-10-01) price data in sensor attributes
+- Swedish and English translations
+- example.yaml with Lovelace cards and automation

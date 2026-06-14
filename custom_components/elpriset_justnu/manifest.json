@@ -1,0 +1,12 @@
+{
+  "domain": "elpriset_justnu",
+  "name": "Elpriset Just Nu",
+  "version": "1.0.0",
+  "documentation": "https://github.com/frossmant/hass-elpriset-justnu",
+  "issue_tracker": "https://github.com/frossmant/hass-elpriset-justnu/issues",
+  "codeowners": ["@frossmant"],
+  "config_flow": true,
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "dependencies": []
+}

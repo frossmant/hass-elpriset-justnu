@@ -1,0 +1,47 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add Price Zone",
+        "description": "Select a Swedish electricity price zone to monitor.",
+        "data": {
+          "price_zone": "Price Zone",
+          "name": "Friendly Name"
+        }
+      },
+      "surcharges": {
+        "title": "Contract Surcharges (optional)",
+        "description": "Enter your electricity contract's fixed surcharges in öre/kWh. These are added on top of the spot price to calculate your real total cost including VAT. Leave all fields at 0 to only show raw spot prices.",
+        "data": {
+          "surcharge_spot_markup": "Fast påslag spot (öre/kWh)",
+          "surcharge_variable_costs": "Rörliga kostnader (öre/kWh)",
+          "surcharge_elcert": "Fast påslag elcertifikat (öre/kWh)",
+          "surcharge_other": "Other fixed markup (öre/kWh)",
+          "vat_percent": "VAT / Moms (%)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to elprisetjustnu.se",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "This price zone is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Elpriset Just Nu Options",
+        "data": {
+          "update_interval": "Update interval (minutes)",
+          "surcharge_spot_markup": "Fast påslag spot (öre/kWh)",
+          "surcharge_variable_costs": "Rörliga kostnader (öre/kWh)",
+          "surcharge_elcert": "Fast påslag elcertifikat (öre/kWh)",
+          "surcharge_other": "Other fixed markup (öre/kWh)",
+          "vat_percent": "VAT / Moms (%)"
+        }
+      }
+    }
+  }
+}

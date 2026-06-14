@@ -1,0 +1,9 @@
+{
+  "name": "Elpriset Just Nu",
+  "domain": "elpriset_justnu",
+  "documentation": "https://github.com/frossmant/hass-elpriset-justnu",
+  "issue_tracker": "https://github.com/frossmant/hass-elpriset-justnu/issues",
+  "codeowners": ["@frossmant"],
+  "render_readme": true,
+  "homeassistant": "2023.1.0"
+}

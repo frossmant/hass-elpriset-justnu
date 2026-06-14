@@ -1,0 +1,58 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Lägg till prisområde",
+        "description": "Välj ett svenskt elprisområde att bevaka.",
+        "data": {
+          "price_zone": "Prisområde",
+          "name": "Visningsnamn"
+        },
+        "data_description": {
+          "price_zone": "SE1 = Luleå / Norra Sverige\nSE2 = Sundsvall / Norra Mellansverige\nSE3 = Stockholm / Södra Mellansverige\nSE4 = Malmö / Södra Sverige",
+          "name": "Valfritt visningsnamn — standard är zonens namn, t.ex. Stockholm / SE3."
+        }
+      },
+      "surcharges": {
+        "title": "Avtalspåslag (valfritt)",
+        "description": "Ange ditt elavtals fasta påslag i **öre/kWh**. Hittas i din leverantörs prisspecifikation. Om du fyller i dessa skapas extra sensorer med ditt verkliga totalpris inkl. moms. Lämna på 0 för att hoppa över.",
+        "data": {
+          "surcharge_spot_markup": "Fast påslag spot (öre/kWh)",
+          "surcharge_variable_costs": "Rörliga kostnader (öre/kWh)",
+          "surcharge_elcert": "Fast påslag elcertifikat (öre/kWh)",
+          "surcharge_other": "Övrigt fast påslag (öre/kWh)",
+          "vat_percent": "Moms (%)"
+        },
+        "data_description": {
+          "surcharge_spot_markup": "T.ex. 7,00 — fast påslag utöver spotpris",
+          "surcharge_variable_costs": "T.ex. 6,99 — rörliga hanteringskostnader",
+          "surcharge_elcert": "T.ex. 1,40 — påslag för elcertifikat",
+          "surcharge_other": "Eventuellt övrigt per-kWh-påslag",
+          "vat_percent": "Svensk moms är 25%"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Kunde inte ansluta till elprisetjustnu.se — kontrollera din internetanslutning.",
+      "unknown": "Oväntat fel."
+    },
+    "abort": {
+      "already_configured": "Detta prisområde är redan konfigurerat."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Elpriset Just Nu inställningar",
+        "data": {
+          "update_interval": "Uppdateringsintervall (minuter)",
+          "surcharge_spot_markup": "Fast påslag spot (öre/kWh)",
+          "surcharge_variable_costs": "Rörliga kostnader (öre/kWh)",
+          "surcharge_elcert": "Fast påslag elcertifikat (öre/kWh)",
+          "surcharge_other": "Övrigt fast påslag (öre/kWh)",
+          "vat_percent": "Moms (%)"
+        }
+      }
+    }
+  }
+}
