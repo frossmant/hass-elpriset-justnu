@@ -1,83 +1,386 @@
 # ============================================================
-# Elpriset Just Nu — example Lovelace dashboard cards
-# Assumes you have configured SE3 (Stockholm) as a zone.
-# Replace "se3" with your zone slug in sensor entity IDs.
+# Elpriset Just Nu — full Lovelace view example
+# Requires:
+#   - custom:button-card (HACS)
+#   - custom:apexcharts-card (HACS)
+# Replace sensor entity names with your actual zone slug.
 # ============================================================
 
-# --- Simple glance card ---
-type: glance
-title: Electricity Prices – Stockholm (SE3)
-entities:
-  - entity: sensor.stockholm_se3_current_price
-    name: Now
-  - entity: sensor.stockholm_se3_next_hour_price
-    name: Next hour
-  - entity: sensor.stockholm_se3_average_price_today
-    name: Avg today
-  - entity: sensor.stockholm_se3_min_price_today
-    name: Min today
-  - entity: sensor.stockholm_se3_max_price_today
-    name: Max today
-
----
-
-# --- Entities card with full detail ---
-type: entities
-title: Electricity Prices – Stockholm (SE3)
-entities:
-  - entity: sensor.stockholm_se3_current_price
-    name: Current price
+views:
+  - title: Elpriset
+    path: elpriset
     icon: mdi:lightning-bolt
-  - entity: sensor.stockholm_se3_next_hour_price
-    name: Next hour price
-    icon: mdi:lightning-bolt-outline
-  - entity: sensor.stockholm_se3_average_price_today
-    name: Daily average
-  - entity: sensor.stockholm_se3_min_price_today
-    name: Daily minimum
-  - entity: sensor.stockholm_se3_max_price_today
-    name: Daily maximum
-  - entity: sensor.stockholm_se3_prices_today
-    name: Hourly slots today
-  - entity: sensor.stockholm_se3_prices_tomorrow
-    name: Hourly slots tomorrow
-  - entity: sensor.stockholm_se3_tomorrow_prices_available
-    name: Tomorrow available
+    cards:
+      - type: vertical-stack
+        cards:
 
----
+          # ── Heading ──────────────────────────────────────────
+          - type: heading
+            icon: mdi:transmission-tower
+            heading_style: title
+            heading: Electricity Price – SE3
 
-# --- apexcharts-card for a price graph (requires apexcharts-card from HACS) ---
-# Install apexcharts-card from HACS first.
-type: custom:apexcharts-card
-header:
-  show: true
-  title: SE3 Today – SEK/kWh
-graph_span: 24h
-span:
-  start: day
-series:
-  - entity: sensor.stockholm_se3_current_price
-    data_generator: |
-      return entity.attributes.prices
-        ? entity.attributes.prices.map(p => [new Date(p.time_start).getTime(), p.SEK_per_kWh])
-        : [];
-    name: Price SEK/kWh
-    type: column
-    color: "#f59e0b"
+          # ── Current / next hour price tiles ──────────────────
+          - type: horizontal-stack
+            cards:
+              - type: custom:button-card
+                entity: sensor.stockholm_se3_sodra_mellansverige_current_total_price
+                icon: mdi:lightning-bolt
+                name: Now
+                show_name: true
+                show_state: false
+                show_label: true
+                label: |
+                  [[[
+                    const val = entity?.state;
+                    if (!val || isNaN(val)) return '–';
+                    return parseFloat(val).toFixed(1) + ' öre/kWh';
+                  ]]]
+                size: 40%
+                tap_action:
+                  action: more-info
+                styles:
+                  card:
+                    - height: 110px
+                    - border-radius: 16px
+                    - background-color: |
+                        [[[
+                          const val = parseFloat(entity?.state);
+                          if (isNaN(val)) return '#1c1c1c';
+                          if (val > 200) return '#b71c1c';
+                          if (val > 100) return '#e65100';
+                          if (val > 50)  return '#f9a825';
+                          return '#1b5e20';
+                        ]]]
+                  icon:
+                    - color: white
+                  name:
+                    - color: white
+                    - font-size: 14px
+                    - font-weight: bold
+                    - justify-self: center
+                  label:
+                    - color: white
+                    - font-size: 13px
+                    - font-weight: bold
+                    - justify-self: center
+                    - align-self: end
+                    - padding-bottom: 8px
 
----
+              - type: custom:button-card
+                entity: sensor.stockholm_se3_sodra_mellansverige_next_hour_total_price
+                icon: mdi:lightning-bolt-outline
+                name: Next Hour
+                show_name: true
+                show_state: false
+                show_label: true
+                label: |
+                  [[[
+                    const val = entity?.state;
+                    if (!val || isNaN(val)) return '–';
+                    return parseFloat(val).toFixed(1) + ' öre/kWh';
+                  ]]]
+                size: 40%
+                tap_action:
+                  action: more-info
+                styles:
+                  card:
+                    - height: 110px
+                    - border-radius: 16px
+                    - background-color: |
+                        [[[
+                          const val = parseFloat(entity?.state);
+                          if (isNaN(val)) return '#1c1c1c';
+                          if (val > 200) return '#b71c1c';
+                          if (val > 100) return '#e65100';
+                          if (val > 50)  return '#f9a825';
+                          return '#1b5e20';
+                        ]]]
+                  icon:
+                    - color: white
+                  name:
+                    - color: white
+                    - font-size: 14px
+                    - font-weight: bold
+                    - justify-self: center
+                  label:
+                    - color: white
+                    - font-size: 13px
+                    - font-weight: bold
+                    - justify-self: center
+                    - align-self: end
+                    - padding-bottom: 8px
 
-# --- Automation example: notify when price drops below 0.50 SEK/kWh ---
-automation:
-  alias: "Electricity price very cheap"
-  trigger:
-    - platform: numeric_state
-      entity_id: sensor.stockholm_se3_current_price
-      below: 0.50
-  action:
-    - service: notify.mobile_app_your_phone
-      data:
-        title: "⚡ Cheap electricity now!"
-        message: >
-          Current SE3 price is {{ states('sensor.stockholm_se3_current_price') }} SEK/kWh.
-          Great time to run dishwasher, washing machine, EV charging, etc.
+              - type: custom:button-card
+                entity: sensor.stockholm_se3_sodra_mellansverige_tomorrow_prices_available
+                icon: mdi:calendar-check
+                name: Tomorrow
+                show_name: true
+                show_state: false
+                show_label: true
+                label: |
+                  [[[
+                    return entity?.state === 'Yes' ? 'Prices ready' : 'After ~13:00';
+                  ]]]
+                size: 40%
+                tap_action:
+                  action: more-info
+                styles:
+                  card:
+                    - height: 110px
+                    - border-radius: 16px
+                    - background-color: |
+                        [[[
+                          return entity?.state === 'Yes' ? '#1b5e20' : '#1c1c1c';
+                        ]]]
+                  icon:
+                    - color: white
+                  name:
+                    - color: white
+                    - font-size: 14px
+                    - font-weight: bold
+                    - justify-self: center
+                  label:
+                    - color: white
+                    - font-size: 13px
+                    - font-weight: bold
+                    - justify-self: center
+                    - align-self: end
+                    - padding-bottom: 8px
+
+          # ── Min / avg / max stat tiles ────────────────────────
+          - type: horizontal-stack
+            cards:
+              - type: custom:button-card
+                entity: sensor.stockholm_se3_sodra_mellansverige_min_total_price_today
+                icon: mdi:arrow-down-bold
+                name: Min today
+                show_name: true
+                show_state: false
+                show_label: true
+                label: |
+                  [[[
+                    const val = entity?.state;
+                    if (!val || isNaN(val)) return '–';
+                    return parseFloat(val).toFixed(1) + ' öre';
+                  ]]]
+                size: 40%
+                styles:
+                  card:
+                    - height: 90px
+                    - border-radius: 16px
+                    - background-color: "#1b5e20"
+                  icon:
+                    - color: white
+                  name:
+                    - color: white
+                    - font-size: 12px
+                    - font-weight: bold
+                    - justify-self: center
+                  label:
+                    - color: white
+                    - font-size: 13px
+                    - font-weight: bold
+                    - justify-self: center
+                    - align-self: end
+                    - padding-bottom: 8px
+
+              - type: custom:button-card
+                entity: sensor.stockholm_se3_sodra_mellansverige_average_total_price_today
+                icon: mdi:approximately-equal
+                name: Avg today
+                show_name: true
+                show_state: false
+                show_label: true
+                label: |
+                  [[[
+                    const val = entity?.state;
+                    if (!val || isNaN(val)) return '–';
+                    return parseFloat(val).toFixed(1) + ' öre';
+                  ]]]
+                size: 40%
+                styles:
+                  card:
+                    - height: 90px
+                    - border-radius: 16px
+                    - background-color: "#1c3a5e"
+                  icon:
+                    - color: white
+                  name:
+                    - color: white
+                    - font-size: 12px
+                    - font-weight: bold
+                    - justify-self: center
+                  label:
+                    - color: white
+                    - font-size: 13px
+                    - font-weight: bold
+                    - justify-self: center
+                    - align-self: end
+                    - padding-bottom: 8px
+
+              - type: custom:button-card
+                entity: sensor.stockholm_se3_sodra_mellansverige_max_total_price_today
+                icon: mdi:arrow-up-bold
+                name: Max today
+                show_name: true
+                show_state: false
+                show_label: true
+                label: |
+                  [[[
+                    const val = entity?.state;
+                    if (!val || isNaN(val)) return '–';
+                    return parseFloat(val).toFixed(1) + ' öre';
+                  ]]]
+                size: 40%
+                styles:
+                  card:
+                    - height: 90px
+                    - border-radius: 16px
+                    - background-color: "#b71c1c"
+                  icon:
+                    - color: white
+                  name:
+                    - color: white
+                    - font-size: 12px
+                    - font-weight: bold
+                    - justify-self: center
+                  label:
+                    - color: white
+                    - font-size: 13px
+                    - font-weight: bold
+                    - justify-self: center
+                    - align-self: end
+                    - padding-bottom: 8px
+
+          # ── Today's price chart (apexcharts-card) ────────────
+          - type: custom:apexcharts-card
+            header:
+              show: true
+              title: Today – Total Price (öre/kWh incl. moms)
+              show_states: true
+              colorize_states: true
+            graph_span: 24h
+            span:
+              start: day
+            now:
+              show: true
+              label: Now
+              color: "#90caf9"
+            apex_config:
+              chart:
+                height: 220
+              yaxis:
+                labels:
+                  formatter: |
+                    EVAL:function(val) { return val ? val.toFixed(0) + ' öre' : ''; }
+              tooltip:
+                x:
+                  format: "HH:mm"
+              plotOptions:
+                bar:
+                  borderRadius: 3
+            series:
+              - entity: sensor.stockholm_se3_sodra_mellansverige_prices_today
+                name: Total price
+                type: column
+                color: |
+                  EVAL:function(val) {
+                    if (val > 200) return '#b71c1c';
+                    if (val > 100) return '#e65100';
+                    if (val > 50)  return '#f9a825';
+                    return '#43a047';
+                  }
+                data_generator: |
+                  const prices = entity.attributes.prices || [];
+                  const surcharge_spot   = 7.00;
+                  const surcharge_var    = 6.99;
+                  const surcharge_elcert = 1.40;
+                  const surcharge_other  = 0.00;
+                  const vat              = 1.25;
+                  return prices.map(p => [
+                    new Date(p.time_start).getTime(),
+                    parseFloat(((p.SEK_per_kWh * 100 + surcharge_spot + surcharge_var + surcharge_elcert + surcharge_other) * vat).toFixed(1))
+                  ]);
+
+          # ── Tomorrow's price chart ────────────────────────────
+          - type: custom:apexcharts-card
+            header:
+              show: true
+              title: Tomorrow – Total Price (öre/kWh incl. moms)
+              show_states: true
+              colorize_states: true
+            graph_span: 24h
+            span:
+              start: day
+              offset: "+1d"
+            apex_config:
+              chart:
+                height: 220
+              yaxis:
+                labels:
+                  formatter: |
+                    EVAL:function(val) { return val ? val.toFixed(0) + ' öre' : ''; }
+              plotOptions:
+                bar:
+                  borderRadius: 3
+            series:
+              - entity: sensor.stockholm_se3_sodra_mellansverige_prices_tomorrow
+                name: Total price
+                type: column
+                color: "#7e57c2"
+                data_generator: |
+                  const prices = entity.attributes.prices || [];
+                  if (!prices.length) return [];
+                  const surcharge_spot   = 7.00;
+                  const surcharge_var    = 6.99;
+                  const surcharge_elcert = 1.40;
+                  const surcharge_other  = 0.00;
+                  const vat              = 1.25;
+                  return prices.map(p => [
+                    new Date(p.time_start).getTime(),
+                    parseFloat(((p.SEK_per_kWh * 100 + surcharge_spot + surcharge_var + surcharge_elcert + surcharge_other) * vat).toFixed(1))
+                  ]);
+
+          # ── Detail entity list ────────────────────────────────
+          - type: entities
+            title: Details
+            entities:
+              - entity: sensor.stockholm_se3_sodra_mellansverige_current_spot_price
+                name: Spot price now (ex. moms)
+                icon: mdi:transmission-tower
+              - entity: sensor.stockholm_se3_sodra_mellansverige_current_total_price
+                name: Total price now (incl. moms)
+                icon: mdi:cash-clock
+              - entity: sensor.stockholm_se3_sodra_mellansverige_next_hour_total_price
+                name: Total price next hour
+                icon: mdi:cash-fast
+              - entity: sensor.stockholm_se3_sodra_mellansverige_average_total_price_today
+                name: Average today
+                icon: mdi:approximately-equal
+              - entity: sensor.stockholm_se3_sodra_mellansverige_min_total_price_today
+                name: Minimum today
+                icon: mdi:arrow-down-bold
+              - entity: sensor.stockholm_se3_sodra_mellansverige_max_total_price_today
+                name: Maximum today
+                icon: mdi:arrow-up-bold
+              - entity: sensor.stockholm_se3_sodra_mellansverige_tomorrow_prices_available
+                name: Tomorrow prices available
+                icon: mdi:calendar-check
+
+          # ── Automation ideas (comment block) ─────────────────
+          # Tip: add an automation like this to get notified of cheap hours:
+          #
+          # automation:
+          #   alias: "Electricity price very cheap"
+          #   trigger:
+          #     - platform: numeric_state
+          #       entity_id: sensor.stockholm_se3_sodra_mellansverige_current_total_price
+          #       below: 50
+          #   action:
+          #     - service: notify.mobile_app_your_phone
+          #       data:
+          #         title: "⚡ Cheap electricity!"
+          #         message: >
+          #           {{ states('sensor.stockholm_se3_sodra_mellansverige_current_total_price') }} öre/kWh right now.
+          #           Good time for dishwasher, washing machine or EV charging.
