@@ -34,7 +34,6 @@ _LOGGER = logging.getLogger(__name__)
 async def _validate_zone(hass: HomeAssistant, zone: str) -> bool:
     """Validate that we can fetch data for the given zone."""
     from datetime import date
-
     today = date.today()
     url = (
         f"https://www.elprisetjustnu.se/api/v1/prices/"
@@ -56,7 +55,6 @@ class ElprisetJustNuConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     def __init__(self) -> None:
-        """Initialise."""
         self._data: dict[str, Any] = {}
 
     async def async_step_user(
@@ -104,7 +102,6 @@ class ElprisetJustNuConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> FlowResult:
         """Step 2: optional contract surcharges (påslag + moms)."""
         if user_input is not None:
-            # Merge surcharge data and create the entry
             self._data.update(user_input)
             return self.async_create_entry(title=self._data[CONF_NAME], data=self._data)
 
@@ -129,29 +126,29 @@ class ElprisetJustNuConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(
         config_entry: config_entries.ConfigEntry,
-    ) -> ElprisetJustNuOptionsFlow:
+    ) -> "ElprisetJustNuOptionsFlow":
         """Get the options flow."""
-        return ElprisetJustNuOptionsFlow(config_entry)
+        return ElprisetJustNuOptionsFlow()
 
 
 class ElprisetJustNuOptionsFlow(config_entries.OptionsFlow):
-    """Handle options for Elpriset Just Nu."""
+    """Handle options for Elpriset Just Nu.
 
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
+    Note: self.config_entry is set automatically by OptionsFlow base class
+    in HA 2024.x+. Do not pass it via __init__.
+    """
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Manage update interval + surcharge overrides."""
+        """Manage update interval and surcharge overrides."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
         data = self.config_entry.data
         opts = self.config_entry.options
 
-        def _get(key, default):
+        def _get(key: str, default: Any) -> Any:
             return opts.get(key, data.get(key, default))
 
         schema = vol.Schema(
