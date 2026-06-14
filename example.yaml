@@ -1,9 +1,15 @@
 # ============================================================
 # Elpriset Just Nu — full Lovelace view example
 # Requires:
-#   - custom:button-card (HACS)
-#   - custom:apexcharts-card (HACS)
-# Replace sensor entity names with your actual zone slug.
+#   - custom:button-card  (HACS)
+#   - custom:apexcharts-card  (HACS)
+#
+# Replace the sensor entity names below with your actual zone
+# if yours differs from Stockholm SE3.
+#
+# Surcharge values in the chart data_generator (7.00 / 6.99 /
+# 1.40) reflect the Vattenfall example contract — update them
+# to match your own contract if different.
 # ============================================================
 
 views:
@@ -14,13 +20,12 @@ views:
       - type: vertical-stack
         cards:
 
-          # ── Heading ──────────────────────────────────────────
           - type: heading
             icon: mdi:transmission-tower
             heading_style: title
             heading: Electricity Price – SE3
 
-          # ── Current / next hour price tiles ──────────────────
+          # ── Current / next hour / tomorrow ───────────────────
           - type: horizontal-stack
             cards:
               - type: custom:button-card
@@ -32,9 +37,9 @@ views:
                 show_label: true
                 label: |
                   [[[
-                    const val = entity?.state;
-                    if (!val || isNaN(val)) return '–';
-                    return parseFloat(val).toFixed(1) + ' öre/kWh';
+                    var val = parseFloat(entity.state);
+                    if (isNaN(val)) return '–';
+                    return val.toFixed(1) + ' öre/kWh';
                   ]]]
                 size: 40%
                 tap_action:
@@ -45,7 +50,7 @@ views:
                     - border-radius: 16px
                     - background-color: |
                         [[[
-                          const val = parseFloat(entity?.state);
+                          var val = parseFloat(entity.state);
                           if (isNaN(val)) return '#1c1c1c';
                           if (val > 200) return '#b71c1c';
                           if (val > 100) return '#e65100';
@@ -76,9 +81,9 @@ views:
                 show_label: true
                 label: |
                   [[[
-                    const val = entity?.state;
-                    if (!val || isNaN(val)) return '–';
-                    return parseFloat(val).toFixed(1) + ' öre/kWh';
+                    var val = parseFloat(entity.state);
+                    if (isNaN(val)) return '–';
+                    return val.toFixed(1) + ' öre/kWh';
                   ]]]
                 size: 40%
                 tap_action:
@@ -89,7 +94,7 @@ views:
                     - border-radius: 16px
                     - background-color: |
                         [[[
-                          const val = parseFloat(entity?.state);
+                          var val = parseFloat(entity.state);
                           if (isNaN(val)) return '#1c1c1c';
                           if (val > 200) return '#b71c1c';
                           if (val > 100) return '#e65100';
@@ -120,7 +125,7 @@ views:
                 show_label: true
                 label: |
                   [[[
-                    return entity?.state === 'Yes' ? 'Prices ready' : 'After ~13:00';
+                    return entity.state === 'Yes' ? 'Prices ready' : 'After ~13:00';
                   ]]]
                 size: 40%
                 tap_action:
@@ -131,7 +136,7 @@ views:
                     - border-radius: 16px
                     - background-color: |
                         [[[
-                          return entity?.state === 'Yes' ? '#1b5e20' : '#1c1c1c';
+                          return entity.state === 'Yes' ? '#1b5e20' : '#1c1c1c';
                         ]]]
                   icon:
                     - color: white
@@ -148,7 +153,7 @@ views:
                     - align-self: end
                     - padding-bottom: 8px
 
-          # ── Min / avg / max stat tiles ────────────────────────
+          # ── Min / avg / max ───────────────────────────────────
           - type: horizontal-stack
             cards:
               - type: custom:button-card
@@ -160,9 +165,8 @@ views:
                 show_label: true
                 label: |
                   [[[
-                    const val = entity?.state;
-                    if (!val || isNaN(val)) return '–';
-                    return parseFloat(val).toFixed(1) + ' öre';
+                    var val = parseFloat(entity.state);
+                    return isNaN(val) ? '–' : val.toFixed(1) + ' öre';
                   ]]]
                 size: 40%
                 styles:
@@ -194,9 +198,8 @@ views:
                 show_label: true
                 label: |
                   [[[
-                    const val = entity?.state;
-                    if (!val || isNaN(val)) return '–';
-                    return parseFloat(val).toFixed(1) + ' öre';
+                    var val = parseFloat(entity.state);
+                    return isNaN(val) ? '–' : val.toFixed(1) + ' öre';
                   ]]]
                 size: 40%
                 styles:
@@ -228,9 +231,8 @@ views:
                 show_label: true
                 label: |
                   [[[
-                    const val = entity?.state;
-                    if (!val || isNaN(val)) return '–';
-                    return parseFloat(val).toFixed(1) + ' öre';
+                    var val = parseFloat(entity.state);
+                    return isNaN(val) ? '–' : val.toFixed(1) + ' öre';
                   ]]]
                 size: 40%
                 styles:
@@ -253,13 +255,11 @@ views:
                     - align-self: end
                     - padding-bottom: 8px
 
-          # ── Today's price chart (apexcharts-card) ────────────
+          # ── Today's price chart ───────────────────────────────
           - type: custom:apexcharts-card
             header:
               show: true
               title: Today – Total Price (öre/kWh incl. moms)
-              show_states: true
-              colorize_states: true
             graph_span: 24h
             span:
               start: day
@@ -270,13 +270,6 @@ views:
             apex_config:
               chart:
                 height: 220
-              yaxis:
-                labels:
-                  formatter: |
-                    EVAL:function(val) { return val ? val.toFixed(0) + ' öre' : ''; }
-              tooltip:
-                x:
-                  format: "HH:mm"
               plotOptions:
                 bar:
                   borderRadius: 3
@@ -284,23 +277,26 @@ views:
               - entity: sensor.stockholm_se3_sodra_mellansverige_prices_today
                 name: Total price
                 type: column
-                color: |
-                  EVAL:function(val) {
-                    if (val > 200) return '#b71c1c';
-                    if (val > 100) return '#e65100';
-                    if (val > 50)  return '#f9a825';
-                    return '#43a047';
-                  }
+                color: "#43a047"
+                color_threshold:
+                  - value: 0
+                    color: "#1b5e20"
+                  - value: 50
+                    color: "#f9a825"
+                  - value: 100
+                    color: "#e65100"
+                  - value: 200
+                    color: "#b71c1c"
                 data_generator: |
                   const prices = entity.attributes.prices || [];
-                  const surcharge_spot   = 7.00;
-                  const surcharge_var    = 6.99;
-                  const surcharge_elcert = 1.40;
-                  const surcharge_other  = 0.00;
-                  const vat              = 1.25;
+                  const s_spot  = 7.00;
+                  const s_var   = 6.99;
+                  const s_elcert = 1.40;
+                  const s_other = 0.00;
+                  const vat     = 1.25;
                   return prices.map(p => [
                     new Date(p.time_start).getTime(),
-                    parseFloat(((p.SEK_per_kWh * 100 + surcharge_spot + surcharge_var + surcharge_elcert + surcharge_other) * vat).toFixed(1))
+                    parseFloat(((p.SEK_per_kWh * 100 + s_spot + s_var + s_elcert + s_other) * vat).toFixed(1))
                   ]);
 
           # ── Tomorrow's price chart ────────────────────────────
@@ -308,8 +304,6 @@ views:
             header:
               show: true
               title: Tomorrow – Total Price (öre/kWh incl. moms)
-              show_states: true
-              colorize_states: true
             graph_span: 24h
             span:
               start: day
@@ -317,10 +311,6 @@ views:
             apex_config:
               chart:
                 height: 220
-              yaxis:
-                labels:
-                  formatter: |
-                    EVAL:function(val) { return val ? val.toFixed(0) + ' öre' : ''; }
               plotOptions:
                 bar:
                   borderRadius: 3
@@ -329,20 +319,29 @@ views:
                 name: Total price
                 type: column
                 color: "#7e57c2"
+                color_threshold:
+                  - value: 0
+                    color: "#1b5e20"
+                  - value: 50
+                    color: "#f9a825"
+                  - value: 100
+                    color: "#e65100"
+                  - value: 200
+                    color: "#b71c1c"
                 data_generator: |
                   const prices = entity.attributes.prices || [];
                   if (!prices.length) return [];
-                  const surcharge_spot   = 7.00;
-                  const surcharge_var    = 6.99;
-                  const surcharge_elcert = 1.40;
-                  const surcharge_other  = 0.00;
-                  const vat              = 1.25;
+                  const s_spot   = 7.00;
+                  const s_var    = 6.99;
+                  const s_elcert = 1.40;
+                  const s_other  = 0.00;
+                  const vat      = 1.25;
                   return prices.map(p => [
                     new Date(p.time_start).getTime(),
-                    parseFloat(((p.SEK_per_kWh * 100 + surcharge_spot + surcharge_var + surcharge_elcert + surcharge_other) * vat).toFixed(1))
+                    parseFloat(((p.SEK_per_kWh * 100 + s_spot + s_var + s_elcert + s_other) * vat).toFixed(1))
                   ]);
 
-          # ── Detail entity list ────────────────────────────────
+          # ── Detail entities ───────────────────────────────────
           - type: entities
             title: Details
             entities:
@@ -367,20 +366,3 @@ views:
               - entity: sensor.stockholm_se3_sodra_mellansverige_tomorrow_prices_available
                 name: Tomorrow prices available
                 icon: mdi:calendar-check
-
-          # ── Automation ideas (comment block) ─────────────────
-          # Tip: add an automation like this to get notified of cheap hours:
-          #
-          # automation:
-          #   alias: "Electricity price very cheap"
-          #   trigger:
-          #     - platform: numeric_state
-          #       entity_id: sensor.stockholm_se3_sodra_mellansverige_current_total_price
-          #       below: 50
-          #   action:
-          #     - service: notify.mobile_app_your_phone
-          #       data:
-          #         title: "⚡ Cheap electricity!"
-          #         message: >
-          #           {{ states('sensor.stockholm_se3_sodra_mellansverige_current_total_price') }} öre/kWh right now.
-          #           Good time for dishwasher, washing machine or EV charging.
