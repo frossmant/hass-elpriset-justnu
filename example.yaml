@@ -1,15 +1,7 @@
 # ============================================================
 # Elpriset Just Nu — full Lovelace view example
-# Requires:
-#   - custom:button-card  (HACS)
-#   - custom:apexcharts-card  (HACS)
-#
-# Replace the sensor entity names below with your actual zone
-# if yours differs from Stockholm SE3.
-#
-# Surcharge values in the chart data_generator (7.00 / 6.99 /
-# 1.40) reflect the Vattenfall example contract — update them
-# to match your own contract if different.
+# Requires only: custom:button-card (HACS)
+# No other custom cards needed.
 # ============================================================
 
 views:
@@ -255,91 +247,22 @@ views:
                     - align-self: end
                     - padding-bottom: 8px
 
-          # ── Today's price chart ───────────────────────────────
-          - type: custom:apexcharts-card
-            header:
-              show: true
-              title: Today – Total Price (öre/kWh incl. moms)
-            graph_span: 24h
-            span:
-              start: day
-            now:
-              show: true
-              label: Now
-              color: "#90caf9"
-            apex_config:
-              chart:
-                height: 220
-              plotOptions:
-                bar:
-                  borderRadius: 3
-            series:
-              - entity: sensor.stockholm_se3_sodra_mellansverige_prices_today
+          # ── Price history graph (last 24 h) ───────────────────
+          - type: history-graph
+            title: Total Price – Last 24h (öre/kWh)
+            hours_to_show: 24
+            logarithmic_scale: false
+            entities:
+              - entity: sensor.stockholm_se3_sodra_mellansverige_current_total_price
                 name: Total price
-                type: column
-                color: "#43a047"
-                color_threshold:
-                  - value: 0
-                    color: "#1b5e20"
-                  - value: 50
-                    color: "#f9a825"
-                  - value: 100
-                    color: "#e65100"
-                  - value: 200
-                    color: "#b71c1c"
-                data_generator: |
-                  const prices = entity.attributes.prices || [];
-                  const s_spot  = 7.00;
-                  const s_var   = 6.99;
-                  const s_elcert = 1.40;
-                  const s_other = 0.00;
-                  const vat     = 1.25;
-                  return prices.map(p => [
-                    new Date(p.time_start).getTime(),
-                    parseFloat(((p.SEK_per_kWh * 100 + s_spot + s_var + s_elcert + s_other) * vat).toFixed(1))
-                  ]);
 
-          # ── Tomorrow's price chart ────────────────────────────
-          - type: custom:apexcharts-card
-            header:
-              show: true
-              title: Tomorrow – Total Price (öre/kWh incl. moms)
-            graph_span: 24h
-            span:
-              start: day
-              offset: "+1d"
-            apex_config:
-              chart:
-                height: 220
-              plotOptions:
-                bar:
-                  borderRadius: 3
-            series:
-              - entity: sensor.stockholm_se3_sodra_mellansverige_prices_tomorrow
-                name: Total price
-                type: column
-                color: "#7e57c2"
-                color_threshold:
-                  - value: 0
-                    color: "#1b5e20"
-                  - value: 50
-                    color: "#f9a825"
-                  - value: 100
-                    color: "#e65100"
-                  - value: 200
-                    color: "#b71c1c"
-                data_generator: |
-                  const prices = entity.attributes.prices || [];
-                  if (!prices.length) return [];
-                  const s_spot   = 7.00;
-                  const s_var    = 6.99;
-                  const s_elcert = 1.40;
-                  const s_other  = 0.00;
-                  const vat      = 1.25;
-                  return prices.map(p => [
-                    new Date(p.time_start).getTime(),
-                    parseFloat(((p.SEK_per_kWh * 100 + s_spot + s_var + s_elcert + s_other) * vat).toFixed(1))
-                  ]);
+          # ── Spot price history for comparison ────────────────
+          - type: history-graph
+            title: Spot Price – Last 24h (SEK/kWh)
+            hours_to_show: 24
+            entities:
+              - entity: sensor.stockholm_se3_sodra_mellansverige_current_spot_price
+                name: Spot price
 
           # ── Detail entities ───────────────────────────────────
           - type: entities
